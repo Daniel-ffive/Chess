@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 from game_params import FIELD_ROW_DICT, FIELD_COL_DICT, COLOR_DICT
 
 
@@ -15,6 +16,7 @@ class Figure:
     def move_to(self, board, new_pos, next_turn):
         """
         Checks if move legal and moves piece if so
+        :param next_turn: side to move on the next turn -> "white" or "black"
         :param board: current board -> Instance of class Board
         :param new_pos: string with new position in modern notation, e. g. "e4"
         :return: True, if move was successfully executed, False if not
@@ -28,11 +30,21 @@ class Figure:
                 if (piece.field_row == FIELD_ROW_DICT[new_pos[1]]
                         and piece.field_col == FIELD_COL_DICT[new_pos[0]]):
                     piece.get_captured(board)
+            old_pos_row = copy.deepcopy(self.field_row)
+            old_pos_col = copy.deepcopy(self.field_col)
             self.field_row = FIELD_ROW_DICT[new_pos[1]]
             self.field_col = FIELD_COL_DICT[new_pos[0]]
-            return True
+            board.create_board()
+            board.king_in_check(self.color)
+            if board.in_check == self.color:
+                self.field_row = old_pos_row
+                self.field_col = old_pos_col
+                board.create_board()
+                return False, "illegal move: king in check"
+            else:
+                return True, "legal move carried out"
         else:
-            return False
+            return False, f"illegal move: {self.short_name} cannot move to {new_pos}"
 
     def get_captured(self, board):
         """
@@ -54,13 +66,10 @@ class Figure:
         if not (target_row > 7 or target_row < 0 or target_col > 7 or target_col < 0):
             row_step = np.sign(move[0])
             col_step = np.sign(move[1])
-            sq_cov = sum(board.status[self.field_row + i * row_step,
-                                      self.field_col + i * col_step]
-                         for i in range(1, abs(move[0])))
-            if sq_cov == 0:
-                return True
-            else:
-                return False
+            sq_cov = not any(board.status[self.field_row + i * row_step,
+                                          self.field_col + i * col_step]
+                             for i in range(1, abs(move[0])))
+            return sq_cov
         else:
             return False
 
@@ -73,7 +82,6 @@ class Figure:
         - cannot move to a square where a piece stands
         Restrictions for all pieces except for Knights:
         - cannot capture-move nor move through a position where a piece stands
-        :param covered_squares:
         :param board: current board
         :return:
         """
@@ -82,8 +90,6 @@ class Figure:
         for move in self.pot_moves:
             target_row = self.field_row + move[0]
             target_col = self.field_col + move[1]
-            if self.short_name.endswith("K") and (target_row, target_col) in board.covered_squares:
-                continue
             if self.path_clear(board, move, target_row, target_col):
                 if board.status[target_row, target_col] * self.color_value == 0:
                     moves.add(move)
@@ -247,46 +253,3 @@ class King(Figure):
                           (-1, 0), (-1, -1), (0, -1), (1, -1)}
         self.value = 10 * self.color_value
         self.short_name = self.color[0] + "K"
-
-
-class Board:
-    def __init__(self, figures):
-        self.figures = figures
-        self.status = np.zeros((8, 8))
-        self.covered_squares = set()
-
-    def create_board(self):
-        self.status = np.zeros((8, 8))
-        for figure in self.figures:
-            self.status[figure.field_row, figure.field_col] = figure.value
-
-    def display_board(self):
-        display = ""
-        for row in range(8):
-            for col in range(8):
-                display += " [  ] "
-        for figure in self.figures:
-            display = display[:6 * (8 * (7 - figure.field_row) + figure.field_col) + 2] \
-                      + figure.short_name \
-                      + display[6 * (8 * (7 - figure.field_row) + figure.field_col) + 4:]
-        for i in range(7, 0, -1):
-            display = display[:i * 6 * 8] + "\n" + display[i * 6 * 8:]
-        print("-------------------------------\n")
-        print(display)
-        return display
-
-    def get_covered_squares(self, color):
-        for figure in self.figures:
-            if figure.color == color:
-                if not figure.short_name.endswith("p"):
-                    figure.get_legal_moves(self)
-                    for move in figure.legal_moves:
-                        self.covered_squares.add((figure.field_row + move[0],
-                                                  figure.field_col + move[1]))
-                else:
-                    for move in figure.pot_capture_moves:
-                        target_row = figure.field_row + move[0]
-                        target_col = figure.field_col + move[1]
-                        if not (target_row > 7 or target_row < 0
-                                or target_col > 7 or target_col < 0):
-                            self.covered_squares.add((target_row, target_col))

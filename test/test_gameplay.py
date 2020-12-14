@@ -6,27 +6,30 @@ if __name__ == '__main__':
     turn = "white"
     board.create_board()
     board.display_board()
-    while True:
-        print("pieces: ", [name for name in FIGURES_DICT.keys()
-                           if FIGURES_DICT[name].value != 0
-                           and name.startswith(turn[0])])
-        figure_to_move = input(f"{turn} to move, chose piece to move from list above: ")
+    predef_moves = [("wP5", "e4"), ("bP4", "d5"),
+                    ("wP5", "d5"), ("bQ", "d5"),
+                    ("wN1", "c3"), ("bQ", "e6"),
+                    ("wK", "e2"), ("wN2", "e2"), ("bN2", "f6")]
+    for move in predef_moves:
+        figure_to_move = move[0]
         if not figure_to_move.startswith(turn[0]):
             print("It is %s's turn. Please chose a %s piece to move." % (turn, turn))
         else:
-            if figure_to_move in FIGURES_DICT.keys():
+            figure_to_move = FIGURES_DICT[figure_to_move]
+            if figure_to_move in board.figures:
                 if turn == "white":
                     next_turn = "black"
                 else:
                     next_turn = "white"
-                figure_to_move = FIGURES_DICT[figure_to_move]
-                new_pos = input("Move to: ")
-                if figure_to_move.move_to(board, new_pos, turn):
-                    print(board.covered_squares)
+                new_pos = move[1]
+                move_done, reason = figure_to_move.move_to(board, new_pos, turn)
+                if move_done:
                     board.create_board()
                     board.display_board()
                     turn = next_turn
                 else:
-                    print("illegal move, chose another one.")
+                    board.create_board()
+                    board.display_board()
+                    print(move, ":", reason)
             else:
                 print(f"{figure_to_move} not on Board")

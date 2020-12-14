@@ -1,6 +1,6 @@
 import unittest
 from src.figure import Pawn, Rook, Knight, Bishop, Queen, King
-from src.figure import Board
+from src.board import Board
 from game_setup import FIGURES
 
 
@@ -201,16 +201,16 @@ class TestLegalMoves(unittest.TestCase):
 
     def test_king_black(self):
         """
-        Testcase: Additional black King on e4, rest of pieces on initial squares
+        Testcase: Additional black King on e3, rest of pieces on initial squares
         """
         self.board.get_covered_squares("white")
-        piece = King("e4", "black")
+        piece = King("e3", "black")
         expected_output = {(1, 0), (1, 1), (0, 1),
                            (0, -1), (1, -1)}
         piece.get_legal_moves(self.board)
         output = piece.legal_moves
         self.assertEqual(expected_output, output)
-        expected_output = set()
+        expected_output = {(-1, 0), (-1, 1), (-1, -1)}
         output = piece.legal_capture_moves
         self.assertEqual(expected_output, output)
 
@@ -222,7 +222,7 @@ class TestLegalMoves(unittest.TestCase):
         board.create_board()
         board.get_covered_squares("black")
         piece = King("e1", "white")
-        expected_output = {(1, 1), (0, 1), (0, -1), (1, -1)}
+        expected_output = {(1, 0), (1, 1), (0, 1), (0, -1), (1, -1)}
         piece.get_legal_moves(board)
         output = piece.legal_moves
         self.assertEqual(expected_output, output)

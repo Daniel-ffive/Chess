@@ -2,7 +2,7 @@ import numpy as np
 import unittest
 import copy
 from src.figure import Pawn, Rook, Knight, Bishop, Queen, King
-from src.figure import Board
+from src.board import Board
 from game_params import FIELD_COL_DICT, FIELD_ROW_DICT
 from game_setup import FIGURES
 
@@ -113,6 +113,40 @@ class TestFigures(unittest.TestCase):
                            (5, 5), (6, 6), (7, 7)}
         board.get_covered_squares("black")
         output = board.covered_squares
+        self.assertEqual(expected_output, output)
+
+    def test_king_in_check(self):
+        king = King("d4", "white")
+        board = Board([king, King("e6", "black"), Bishop("a1", "black")])
+        board.create_board()
+        board.king_in_check(king.color)
+        expected_output = king.color
+        output = board.in_check
+        self.assertEqual(expected_output, output)
+
+    def test_king_in_check_2(self):
+        king = King("e4", "white")
+        board = Board([king, King("e6", "black"), Bishop("a1", "black")])
+        board.create_board()
+        board.king_in_check(king.color)
+        expected_output = "None"
+        output = board.in_check
+        self.assertEqual(expected_output, output)
+
+    def test_king_capture_covered_piece(self):
+        king = King("e4", "white")
+        board = Board([king, Knight("e5", "black"), Bishop("a1", "black")])
+        board.create_board()
+        output = king.move_to(board, "e5", "black")
+        expected_output = (False, "illegal move: king in check")
+        self.assertEqual(expected_output, output)
+
+    def test_king_capture_uncovered_piece(self):
+        king = King("e4", "white")
+        board = Board([king, Knight("e5", "black"), Bishop("a2", "black")])
+        board.create_board()
+        output = king.move_to(board, "e5", "black")
+        expected_output = (True, "legal move carried out")
         self.assertEqual(expected_output, output)
 
 
